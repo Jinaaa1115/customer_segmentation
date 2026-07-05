@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Data files (don't commit large/raw datasets)
+data.csv
+*.xlsx
+rfm_with_clusters.csv
+
+# Model artifacts (optional - remove these lines if you WANT to commit the trained model)
+# kmeans_model.pkl
+# scaler.pkl
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Env files
+.env
+frontend/.env
+
+# OS/editor
+.DS_Store
+.vscode/
+*.log
+
+# Plots
+elbow_silhouette.png
