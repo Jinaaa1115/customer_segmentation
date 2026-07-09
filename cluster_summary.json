@@ -1,0 +1,55 @@
+{
+  "total_customers": 4290,
+  "total_revenue": 6737063.16,
+  "optimal_k": 4,
+  "clusters": [
+    {
+      "cluster": 0,
+      "label": "Loyal / Regular Customer",
+      "description": "Buys fairly regularly with solid spend. Reward with loyalty perks.",
+      "recency_mean": 46.5,
+      "frequency_mean": 4.1,
+      "monetary_mean": 1454.2,
+      "count": 1436,
+      "pct_of_customers": 33.5,
+      "revenue_total": 2088281.56,
+      "pct_of_revenue": 31.0
+    },
+    {
+      "cluster": 1,
+      "label": "At Risk / Dormant Customer",
+      "description": "Hasn't purchased in a long time. Target with re-engagement campaigns/discounts.",
+      "recency_mean": 260.2,
+      "frequency_mean": 1.4,
+      "monetary_mean": 357.2,
+      "count": 921,
+      "pct_of_customers": 21.5,
+      "revenue_total": 329015.08,
+      "pct_of_revenue": 4.9
+    },
+    {
+      "cluster": 2,
+      "label": "New / Occasional Customer",
+      "description": "Newer or occasional buyer with low spend so far. Nurture towards repeat purchases.",
+      "recency_mean": 58.8,
+      "frequency_mean": 1.5,
+      "monetary_mean": 361.8,
+      "count": 1343,
+      "pct_of_customers": 31.3,
+      "revenue_total": 485935.33,
+      "pct_of_revenue": 7.2
+    },
+    {
+      "cluster": 3,
+      "label": "Champion / High-Value Customer",
+      "description": "Highest frequency and spend, most recent purchase. Prioritize retention and VIP treatment.",
+      "recency_mean": 18.5,
+      "frequency_mean": 15.0,
+      "monetary_mean": 6498.0,
+      "count": 590,
+      "pct_of_customers": 13.8,
+      "revenue_total": 3833831.19,
+      "pct_of_revenue": 56.9
+    }
+  ]
+}

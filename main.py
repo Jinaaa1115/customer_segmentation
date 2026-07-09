@@ -1,8 +1,12 @@
 import pickle
+import json
+import csv
+
 import numpy as np
-from fastapi import FastAPI
+from fastapi import FastAPI,HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel,Field
+from typing import Optional,List
 
 #load model & scaler
 
@@ -12,27 +16,47 @@ with open("kmeans_model.pkl","rb") as f:
 with open("scaler.pkl","rb") as f:
     scaler=pickle.load(f)
 
-#Cluster - label mapping
+#load- dashboard data
 
-# Based on cluster_summary output from training:
-# Cluster 3: Recency=18.5,  Freq=15.0, Monetary=6498  -> Champions
-# Cluster 0: Recency=46.5,  Freq=4.1,  Monetary=1454  -> Loyal / Regular Customers
-# Cluster 2: Recency=58.8,  Freq=1.5,  Monetary=362   -> New / Occasional Customers
-# Cluster 1: Recency=260.2, Freq=1.4,  Monetary=357   -> At Risk / Dormant
+try:
+    with open("cluster_summary.json", "r") as f:
+        CLUSTER_DATA = json.load(f)
+except FileNotFoundError:
+    CLUSTER_DATA = {"total_customers": 0, "total_revenue": 0, "optimal_k": 0, "clusters": []}
  
-CLUSTER_LABELS = {
+try:
+    with open("sample_customers.csv", "r") as f:
+        SAMPLE_CUSTOMERS = list(csv.DictReader(f))
+except FileNotFoundError:
+    SAMPLE_CUSTOMERS = []
+ 
+CLUSTER_COLORS = {
+    0: "#4C9A8C",  # Loyal - teal
+    1: "#E0665B",  # At Risk - coral
+    2: "#5B8DEF",  # New - sky blue
+    3: "#D4A24C",  # Champion - amber
+}
+ 
+# Fallback labels used only if cluster_summary.json isn't present yet
+_DEFAULT_LABELS = {
     0: "Loyal / Regular Customer",
     1: "At Risk / Dormant Customer",
     2: "New / Occasional Customer",
     3: "Champion / High-Value Customer",
 }
-
-CLUSTER_DESCRIPTIONS = {
+_DEFAULT_DESCRIPTIONS = {
     0: "Buys fairly regularly with solid spend. Reward with loyalty perks.",
     1: "Hasn't purchased in a long time. Target with re-engagement campaigns/discounts.",
     2: "Newer or occasional buyer with low spend so far. Nurture towards repeat purchases.",
     3: "Highest frequency and spend, most recent purchase. Prioritize retention and VIP treatment.",
 }
+
+CLUSTER_LABELS = {c["cluster"]: c["label"] for c in CLUSTER_DATA["clusters"]} or _DEFAULT_LABELS
+CLUSTER_DESCRIPTIONS = {
+    c["cluster"]: c["description"] for c in CLUSTER_DATA["clusters"]
+} or _DEFAULT_DESCRIPTIONS
+ 
+ 
 
 #FastAPI app
 
@@ -58,11 +82,77 @@ class SegmentResponse(BaseModel):
     segment_label: str
     description: str
  
+class ClusterSummary(BaseModel):
+    cluster: int
+    label: str
+    description: str
+    color: str
+    count: int
+    pct_of_customers: float
+    recency_mean: float
+    frequency_mean: float
+    monetary_mean: float
+    revenue_total: float
+    pct_of_revenue: float
+
+class DashboardOverview(BaseModel):
+    total_customers: int
+    total_revenue: float
+    optimal_k: int
+    clusters: List[ClusterSummary]
+ 
+ 
+class CustomerRecord(BaseModel):
+    customer_id: str
+    recency: float
+    frequency: int
+    monetary: float
+    cluster: int
+    label: str
+
 
 @app.get("/")
 def root():
     return {"message": "Customer Segmentation API is running"}
  
+@app.get("/cluster-summary", response_model=DashboardOverview)
+def cluster_summary():
+    """Aggregated stats per cluster - powers the dashboard overview charts."""
+    clusters = [
+        ClusterSummary(**c, color=CLUSTER_COLORS.get(c["cluster"], "#8B93A8"))
+        for c in CLUSTER_DATA["clusters"]
+    ]
+    return DashboardOverview(
+        total_customers=CLUSTER_DATA["total_customers"],
+        total_revenue=CLUSTER_DATA["total_revenue"],
+        optimal_k=CLUSTER_DATA["optimal_k"],
+        clusters=clusters,
+    )
+
+@app.get("/customers", response_model=List[CustomerRecord])
+def get_customers(cluster: Optional[int] = None, limit: int = 50):
+    """Sample customer list with RFM values and segment - powers the explorer table."""
+    records = SAMPLE_CUSTOMERS
+ 
+    if cluster is not None:
+        records = [r for r in records if int(r["Cluster"]) == cluster]
+        if not records and cluster not in CLUSTER_LABELS:
+            raise HTTPException(status_code=404, detail=f"Cluster {cluster} not found")
+ 
+    limit = min(limit, 150)
+    records = records[:limit]
+ 
+    return [
+        CustomerRecord(
+            customer_id=str(r["CustomerID"]),
+            recency=round(float(r["Recency"]), 1),
+            frequency=int(float(r["Frequency"])),
+            monetary=round(float(r["Monetary"]), 2),
+            cluster=int(r["Cluster"]),
+            label=r["Label"],
+        )
+        for r in records
+    ]
  
 @app.post("/predict-segment", response_model=SegmentResponse)
 def predict_segment(customer: CustomerRFM):

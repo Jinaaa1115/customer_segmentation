@@ -16,6 +16,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY main.py .
 COPY kmeans_model.pkl .
 COPY scaler.pkl .
+COPY cluster_summary.json .
+COPY sample_customers.csv .
 
 EXPOSE 8000
 
