@@ -6,5 +6,6 @@ __pycache__
 .venv
 .git
 .env
-*.csv
+data.csv
+rfm_with_clusters.csv
 elbow_silhouette.png
